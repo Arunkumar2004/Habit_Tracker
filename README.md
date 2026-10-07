@@ -3,7 +3,7 @@
 A personal, mobile-first web app for a **12-month runway model plan**, **daily habits** and **money**.
 It installs on a phone like an app, works offline, and keeps your data on your device.
 
-Spec: [`MD/Runway_OS_App_Blueprint.md`](MD/Runway_OS_App_Blueprint.md). Build notes for contributors: [`BUILD-BRIEF.md`](BUILD-BRIEF.md).
+Spec: [`MD/Runway_OS_App_Blueprint.md`](MD/Runway_OS_App_Blueprint.md). Build notes for contributors: [`MD/BUILD-BRIEF.md`](MD/BUILD-BRIEF.md).
 
 ## What it does
 
