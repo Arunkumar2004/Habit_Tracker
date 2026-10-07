@@ -25,14 +25,9 @@ h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -.01em; }
 .nav button[aria-current="page"] { color: var(--accent); font-weight: 600; }
 .nav svg { width: 22px; height: 22px; }
 
-/* Quick add (+) in the top-right of each main tab */
-.qa-btn {
-  width: 40px; height: 40px; flex: none; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink);
-  display: grid; place-items: center; box-shadow: 0 6px 16px -8px rgba(232, 101, 10, .6);
-  transition: transform .15s var(--ease);
-}
+/* Quick add (+) in the top-right of each main tab: a plain icon button, like Settings and Add habit */
+.qa-btn { flex: none; }
 .qa-btn:active { transform: scale(.93); }
-.qa-btn svg { width: 22px; height: 22px; }
 
 /* ---------- Headers ---------- */
 .screen-head { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); min-height: 44px; }

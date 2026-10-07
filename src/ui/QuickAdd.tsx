@@ -29,7 +29,7 @@ function QuickAddMenu({ close }: { close: () => void }) {
 
 export function QuickAddButton() {
   return (
-    <button type="button" className="qa-btn" aria-label="Quick add" onClick={openQuickAdd}>
+    <button type="button" className="icon-btn qa-btn" aria-label="Quick add" onClick={openQuickAdd}>
       <Icon name="plus" />
     </button>
   );
