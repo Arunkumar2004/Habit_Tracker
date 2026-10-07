@@ -228,7 +228,7 @@ export interface FrontBody {
   legs: [Leg, Leg];
   hl?: Hl[];
   /** Foot drawing: 'stand' points the feet at the viewer, 'side' lays them along the floor. */
-  feet?: 'stand' | 'side';
+  feet?: 'stand' | 'side' | 'dot';
   breath?: number;
 }
 export interface FrontOut {
@@ -262,7 +262,9 @@ export function frontBody(b: FrontBody): FrontOut {
   const legR = solveLimb(hipR, b.legs[1], BODY.thigh, BODY.shin);
   const tone = (k: Hl): Tone => (hl.has(k) ? 'accent' : 'ink');
   const foot = (ankle: Vec, side: -1 | 1, a: number): Shape =>
-    b.feet === 'side'
+    b.feet === 'dot'
+      ? { t: 'circle', c: ankle, r: 3.6, tone: 'none', fill: 'ink' }
+      : b.feet === 'side'
       ? { t: 'path', pts: footPath(ankle, { a: 0, b: 0, foot: a }), w: BODY.wFoot, tone: 'ink' }
       : { t: 'path', pts: [add(ankle, v(-side * 1.2, 0)), add(ankle, v(-side * 0.8, -2.9)), add(ankle, v(side * 4.2, -2.9))], w: BODY.wFoot + 0.6, tone: 'ink' };
   const limb = (s: Vec, m: Vec, e: Vec, w1: number, w2: number, k1: Hl, k2: Hl): Shape[] => [line(s, m, w1, tone(k1)), line(m, e, w2, tone(k2))];
@@ -296,7 +298,8 @@ export function frontBody(b: FrontBody): FrontOut {
   // A dropped head sits in front of the chest, so it is drawn after the arms' roots.
   if (drop > 0.3) shapes.push(...arms, ...delts, ...headShapes);
   else shapes.push(...headShapes, ...arms, ...delts);
-  const fb = (ankle: Vec, a: number): Vec => (b.feet === 'side' ? footPt(ankle, a, v(4, -5)) : add(ankle, v(0, -5.1)));
+  const fb = (ankle: Vec, a: number): Vec =>
+    b.feet === 'dot' ? add(ankle, v(0, -3.6)) : b.feet === 'side' ? footPt(ankle, a, v(4, -5)) : add(ankle, v(0, -5.1));
   return {
     shapes,
     j: { pelvis: P, neck: neckTop, head, sL, sR, eL: armL.mid, eR: armR.mid, hL: armL.end, hR: armR.end, hipL, hipR, kL: legL.mid, kR: legR.mid, aL: legL.end, aR: legR.end },

@@ -434,6 +434,7 @@ const bulgarian_split_squat: MoveDef = {
 };
 
 const LC_HIP = v(90, 47.5);
+const LC_GRIP = v(37, 31);
 const leg_curl: MoveDef = {
   id: 'leg_curl', name: 'Leg curl', view: 'side',
   alt: 'Lying face down with the pad just above the heels: the heels curl towards the glutes while the hips stay down, then lower slowly.',
@@ -446,16 +447,17 @@ const leg_curl: MoveDef = {
     const leg: Leg = { a: 0, b: p.sh, foot: p.sh - 80 };
     const S = sideBody({
       hip: LC_HIP, torso: 180, facing: -1, nod: 14, hl: ['thigh'],
-      arms: [{ a: -112, b: -62 }, { a: -112, b: -62 }], legs: [leg, { ...leg, b: p.sh - 1.5 }],
+      arms: [{ to: LC_GRIP, hint: v(-0.4, -1) }, { to: LC_GRIP, hint: v(-0.4, -1) }], legs: [leg, { ...leg, b: p.sh - 1.5 }],
     });
     const pad = add(add(knee, mul(dir(p.sh), 27)), mul(dir(p.sh + 90), 8.6));
     return sideFrame(S, {
       back: [
         eq.rect(28, 35, 92, 5.4), eq.post(v(40, 0), v(40, 35)), eq.post(v(112, 0), v(112, 35)), floorBase(32, 132),
         eq.post(v(knee.x, 35), v(knee.x + 6, 0)), { t: 'circle', c: knee, r: 4.5, tone: 'muted', fill: 'line', w: 1.4 },
+        eq.post(v(LC_GRIP.x + 4, 35), LC_GRIP, 2.4),
       ],
       front: [eq.post(knee, pad, 2.6), { t: 'circle', c: pad, r: 5, tone: 'muted', fill: 'line', w: 1.6 }],
-    }, [touch('pad on lower leg', pad, add(add(S.j.knee, mul(dir(p.sh), 27)), mul(dir(p.sh + 90), 8.6)))]);
+    }, [touch('near hand on handle', S.j.hand, LC_GRIP), touch('pad on lower leg', pad, add(add(S.j.knee, mul(dir(p.sh), 27)), mul(dir(p.sh + 90), 8.6)))]);
   },
 };
 
@@ -525,18 +527,18 @@ const side_plank: MoveDef = {
     for (let i = 0; i < 30; i++) {
       const u = dir(th), r = dir(th - 90);
       const y = sR.y - (36.1 + 1.5 + 66) * u.y + (16 - 8.5) * -r.y;
-      th += (y - 5.4) * 0.4;
+      th += (y - 3.7) * 0.4;
     }
     const u = dir(th), r = dir(th - 90);
     const pelvis = sub(sub(sR, mul(u, 0.95 * BODY.torso)), mul(r, 16));
     const hipR = add(add(pelvis, mul(u, -0.04 * BODY.torso)), mul(r, 8.5));
     const aR = sub(hipR, mul(u, 66));
     const F = frontBody({
-      pelvis, torso: th, breath: p.br, hl: ['core'], feet: 'side',
+      pelvis, torso: th, breath: p.br, hl: ['core'], feet: 'dot',
       arms: [{ a: 90, b: 90 }, { a: -90, b: -12, s2: 0.6 }],
       legs: [{ to: add(aR, mul(r, -7.5)), hint: u, foot: th + 180 + 90 }, { to: aR, hint: u, foot: th + 180 + 90 }],
     });
-    return frontFrame(F, {}, [onFloor('elbow', add(F.j.eR, v(0, -3.6))), onFloor('lower foot', add(F.j.aR, v(0, -5.2)), 0)]);
+    return frontFrame(F, {}, [onFloor('elbow', add(F.j.eR, v(0, -3.6))), onFloor('lower foot', F.footBottom[1])]);
   },
 };
 
