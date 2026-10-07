@@ -113,3 +113,19 @@ describe('habitTarget and scheduleText', () => {
     expect(scheduleText({ kind: 'times_per_week', times: 5 })).toBe('5× per week');
   });
 });
+
+describe('sessionFor: plan started mid-week', () => {
+  it('does not count days before the start date as missed', async () => {
+    const { sessionFor } = await import('./schedule');
+    const { emptyData } = await import('../store/storage');
+    const data = emptyData();
+    // Thursday 8 Oct 2026 is Day 1: Thursday's planned session is Upper B, nothing owed from Mon–Wed.
+    data.profile.me = {
+      id: 'me', updatedAt: 1, name: 'A', startDate: '2026-10-08', heightCm: 185, weightKg: 72, bodyType: 'average',
+      diet: 'veg', currency: 'INR', theme: 'auto', monthlyBudget: 0, onboarded: true,
+    };
+    const pick = sessionFor(data, '2026-10-08');
+    expect(pick.session).toBe('upper_b');
+    expect(pick.shifted).toBe(false);
+  });
+});

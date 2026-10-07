@@ -1,4 +1,5 @@
-// OWNER: Progress agent. Exports progressScreens ('default' + sub-screens), settingsScreens ('settings') and Onboarding.
+// OWNER: Progress agent. Exports progressScreens ('default' + sub-screens) and settingsScreens ('settings').
+// The first-run flow lives in features/entry.
 import { useState } from 'react';
 import './progress.css';
 import type { Screens } from '../../app/screens';
@@ -14,7 +15,6 @@ import { PhotosScreen } from './Photos';
 import { ModelCardScreen } from './ModelCard';
 import { settingsScreens as settings } from './Settings';
 
-export { Onboarding } from './Onboarding';
 
 export const progressScreens: Screens = {
   default: ProgressHome,

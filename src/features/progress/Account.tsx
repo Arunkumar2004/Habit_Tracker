@@ -30,6 +30,10 @@ const STATUS: Record<CloudState['status'], string> = {
   error: 'Sync failed',
 };
 
+export function authMessage(x: unknown): string {
+  return message(x);
+}
+
 function message(x: unknown): string {
   const m = x && typeof x === 'object' && 'message' in x ? String((x as { message: unknown }).message) : String(x);
   if (/invalid login credentials/i.test(m)) return 'Wrong email or password.';

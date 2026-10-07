@@ -57,7 +57,14 @@ function finishedGym(data: Data, date: string): SessionKey[] {
 /** Gym sessions already done this week, before `date`, in the order they happened. */
 export function gymDoneThisWeek(data: Data, date: string): SessionKey[] {
   const done: SessionKey[] = [];
+  const start = data.profile.me?.startDate;
   for (let d = weekStart(date); d < date; d = addDays(d, 1)) {
+    // Days before the plan started owe nothing: their planned session counts as taken care of.
+    if (start && d < start) {
+      const planned = WEEK_SPLIT[splitIndex(d)];
+      if (planned.gym && !done.includes(planned.session)) done.push(planned.session);
+      continue;
+    }
     const fin = finishedGym(data, d);
     if (fin.length) {
       for (const s of fin) if (!done.includes(s)) done.push(s);

@@ -1,49 +1,11 @@
-/* Progress, Settings, Onboarding (area D). Every class starts with pg-. Colours only through tokens. */
+/* Progress and Settings (area D). Every class starts with pg-. Colours only through tokens. */
 
-/* ---------- Onboarding ---------- */
-.pg-onb { min-height: calc(100vh - 32px); display: flex; flex-direction: column; gap: var(--s5); padding-top: var(--s4); }
-.pg-brand { display: grid; gap: var(--s2); }
-.pg-mark {
-  width: 52px; height: 52px; border-radius: 14px; background: var(--accent); color: var(--accent-ink);
-  display: grid; place-items: center; font-weight: 800; font-size: 26px; letter-spacing: -.04em;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-.pg-brand h1 { font-size: var(--fs-display); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
-.pg-brand h1 span { color: var(--accent); }
-.pg-brand p { margin: 0; color: var(--muted); font-size: var(--fs-body); }
-.pg-dots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.pg-dots i { height: 4px; border-radius: 2px; background: var(--surface-2); transition: background .25s var(--ease); }
-.pg-dots i[data-on="true"] { background: var(--accent); }
-.pg-step { display: grid; gap: var(--s4); animation: up .25s var(--ease); }
-.pg-step h2 { font-size: var(--fs-h1); font-weight: 700; }
-.pg-step-n { color: var(--accent); }
-.pg-onb-foot { margin-top: auto; display: grid; grid-template-columns: auto 1fr; gap: var(--s3); padding-bottom: var(--s4); }
-.pg-onb-foot .btn-primary { min-height: 52px; font-size: 16px; }
-.pg-onb-foot .btn { min-height: 52px; }
 .pg-big { font-size: var(--fs-h2); font-weight: 600; min-height: 52px; }
 .pg-unit { position: relative; }
 .pg-unit > span {
   position: absolute; right: var(--s3); top: 50%; transform: translateY(-50%); color: var(--muted); font-size: var(--fs-small);
   pointer-events: none;
 }
-.pg-choices { display: grid; gap: var(--s2); }
-.pg-choice {
-  display: flex; align-items: center; gap: var(--s3); text-align: left; min-height: 64px; padding: var(--s3) var(--s4);
-  border-radius: var(--r-card); border: 2px solid var(--line); background: var(--surface); width: 100%;
-  transition: border-color .15s var(--ease), background .15s var(--ease);
-}
-.pg-choice strong { display: block; font-weight: 600; }
-.pg-choice small { color: var(--muted); font-size: var(--fs-small); }
-.pg-choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.pg-choice .pg-radio {
-  width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center;
-}
-.pg-choice[aria-pressed="true"] .pg-radio { border-color: var(--accent); }
-.pg-choice[aria-pressed="true"] .pg-radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
-.pg-targets { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
-.pg-target { background: var(--surface-2); border-radius: var(--r-card); padding: var(--s4); display: grid; gap: 2px; }
-.pg-target b { font-size: var(--fs-h1); font-weight: 800; }
-.pg-target b small { font-size: var(--fs-small); font-weight: 600; color: var(--muted); margin-left: 2px; }
 
 /* ---------- Shared ---------- */
 .pg-screen { display: grid; gap: var(--s4); }

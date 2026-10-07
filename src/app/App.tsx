@@ -7,8 +7,9 @@ import type { Screens, ScreenProps } from './screens';
 import { todayScreens, habitsScreens } from '../features/today';
 import { planScreens } from '../features/plan';
 import { moneyScreens } from '../features/money';
-import { progressScreens, settingsScreens, Onboarding } from '../features/progress';
+import { progressScreens, settingsScreens } from '../features/progress';
 import { PasswordRecovery } from '../features/progress/Account';
+import { Entry, Splash } from '../features/entry/Entry';
 
 const ROUTES: Record<Tab, Screens> = {
   today: { ...todayScreens, ...settingsScreens },
@@ -102,8 +103,8 @@ export function App() {
   const route = useStore((s) => s.route);
   const navigate = useStore((s) => s.navigate);
 
-  if (!ready) return <div className="app" aria-busy="true" />;
-  if (!onboarded) return <div className="app"><Onboarding /><PasswordRecovery /><ToastHost /></div>;
+  if (!ready) return <Splash />;
+  if (!onboarded) return <><Entry /><PasswordRecovery /><ToastHost /></>;
 
   const screens = ROUTES[route.tab];
   const Screen: ComponentType<ScreenProps> = screens[route.screen ?? 'default'] ?? screens.default;
