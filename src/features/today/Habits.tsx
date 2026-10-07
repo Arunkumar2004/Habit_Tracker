@@ -38,6 +38,7 @@ export function HabitsScreen() {
     <div className="td">
       <ScreenHeader
         title="Habits"
+        quickAdd={false}
         right={
           <button className="icon-btn" type="button" aria-label="Add habit" onClick={() => navigate('habits', 'edit')}>
             <Icon name="plus" />

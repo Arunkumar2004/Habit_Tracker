@@ -1,7 +1,6 @@
-// App shell: boot, theme, onboarding gate, tab routing, bottom nav, (+) quick add, sheet and toast hosts.
-import { useEffect, useState, type ComponentType } from 'react';
+// App shell: boot, theme, entry gate, tab routing, bottom nav, sheet and toast hosts. Quick add lives in ui/QuickAdd.tsx.
+import { useEffect, type ComponentType } from 'react';
 import { useStore, type Tab } from '../store/store';
-import { quickAddItems } from '../store/registry';
 import { Icon } from '../ui/Icon';
 import type { Screens, ScreenProps } from './screens';
 import { todayScreens, habitsScreens } from '../features/today';
@@ -74,55 +73,6 @@ function ToastHost() {
   );
 }
 
-/** Floating (+) above the tab bar. Slides away while scrolling down so it never sits on top of a control. */
-function QuickAddButton() {
-  const [hidden, setHidden] = useState(false);
-  useEffect(() => {
-    let last = window.scrollY;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const onScroll = () => {
-      const y = window.scrollY;
-      if (y > last + 4 && y > 80) setHidden(true);
-      else if (y < last - 4) setHidden(false);
-      last = y;
-      clearTimeout(timer);
-      timer = setTimeout(() => setHidden(false), 900); // back once scrolling stops
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      clearTimeout(timer);
-    };
-  }, []);
-  return (
-    <button className="fab" data-hidden={hidden} type="button" aria-label="Quick add" onClick={openQuickAdd}>
-      <Icon name="plus" />
-    </button>
-  );
-}
-
-function openQuickAdd() {
-  const { openSheet, closeSheet } = useStore.getState();
-  openSheet('Quick add', () => <QuickAddMenu close={closeSheet} />);
-}
-function QuickAddMenu({ close }: { close: () => void }) {
-  const items = quickAddItems();
-  const open = useStore((s) => s.openSheet);
-  return (
-    <div className="grid-3">
-      {items.map((it) => (
-        <button
-          key={it.id} type="button" className="card" style={{ border: 0, display: 'grid', gap: 6, justifyItems: 'center', minHeight: 88 }}
-          onClick={() => open(it.label, () => it.render(close))}
-        >
-          <span style={{ color: 'var(--accent)' }}><Icon name={it.icon} size={26} /></span>
-          <span className="small" style={{ fontWeight: 600 }}>{it.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function App() {
   useTheme();
   const ready = useStore((s) => s.ready);
@@ -140,7 +90,6 @@ export function App() {
       <main className="app">
         <Screen params={route.params ?? {}} />
       </main>
-      {!route.screen && <QuickAddButton />}
       <nav className="nav" aria-label="Main">
         <div className="nav-inner">
           {TABS.map((t) => (

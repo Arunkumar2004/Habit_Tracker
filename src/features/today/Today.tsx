@@ -16,6 +16,7 @@ import { habitStreak } from '../../engines/streak';
 import { todaySummary } from '../../engines/budget';
 import { AREA_LABEL, bump, fmtPair, fmtValue, openValueSheet, stepOf, toggleCheck, valueOf } from './shared';
 import { openNoteSheet } from './quick';
+import { QuickAddButton } from '../../ui/QuickAdd';
 
 const SESSION_META: Partial<Record<SessionKey, string>> = {
   upper_a: '7 exercises · 70 min',
@@ -71,9 +72,12 @@ export function TodayScreen() {
           <div className="td-dayline num">Day {info.dayN} · Week {Math.min(info.week, 52)} of 52 · Month {info.month}</div>
           <h1 className="td-hello">{greeting()}{profile?.name ? `, ${profile.name}` : ''}</h1>
         </div>
-        <button className="icon-btn" type="button" aria-label="Settings" onClick={() => navigate('today', 'settings')}>
-          <Icon name="settings" />
-        </button>
+        <div className="td-head-actions">
+          <QuickAddButton />
+          <button className="icon-btn" type="button" aria-label="Settings" onClick={() => navigate('today', 'settings')}>
+            <Icon name="settings" />
+          </button>
+        </div>
       </header>
 
       <section className="card td-score" aria-label="Today's score">

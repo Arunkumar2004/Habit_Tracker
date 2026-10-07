@@ -3,6 +3,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { useStore } from '../store/store';
 import { clamp } from '../lib/format';
+import { QuickAddButton } from './QuickAdd';
 
 /** Light vibration on supported phones. */
 export function haptic(ms = 10) {
@@ -59,9 +60,13 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   );
 }
 
-/** Title row for a screen. Shows a back button when `back` is true. */
-export function ScreenHeader({ title, back, right }: { title: string; back?: boolean; right?: ReactNode }) {
+/**
+ * Title row for a screen. Shows a back button when `back` is true.
+ * Main-tab headers (no back button) also get the quick-add (+) on the right, unless `quickAdd` is false.
+ */
+export function ScreenHeader({ title, back, right, quickAdd }: { title: string; back?: boolean; right?: ReactNode; quickAdd?: boolean }) {
   const goBack = useStore((s) => s.back);
+  const showQuick = quickAdd ?? !back;
   return (
     <header className="screen-head">
       {back && (
@@ -71,6 +76,7 @@ export function ScreenHeader({ title, back, right }: { title: string; back?: boo
       )}
       <h1>{title}</h1>
       {right}
+      {showQuick && <QuickAddButton />}
     </header>
   );
 }
