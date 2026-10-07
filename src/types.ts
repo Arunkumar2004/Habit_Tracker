@@ -126,7 +126,28 @@ export interface Recurring extends Base {
 }
 export interface Goal extends Base { name: string; target: number; saved: number; deadline?: string }
 
+/**
+ * The person's own, editable plan (one record, id 'me'). Copied from a template at setup, then edited in
+ * Plan → Edit plan. Missing record = the Runway model template. Shapes come from the plan content files.
+ */
+export interface PlanDoc extends Base {
+  id: 'me';
+  template: PlanTemplateId;
+  /** Shown in the Plan tab, e.g. 'Runway model'. */
+  name: string;
+  roadmap: import('./data/plan').RoadmapStep[];
+  /** Session for each weekday, Monday first (7 entries). */
+  week: import('./data/plan').SessionKey[];
+  sessions: Record<import('./data/plan').SessionKey, import('./data/sessions').SessionDef>;
+  menus: Record<Diet, import('./data/food').DayMenu>;
+  checklists: import('./data/checklists').ChecklistDef[];
+  /** One-line rule shown on the roadmap. */
+  rule: string;
+}
+export type PlanTemplateId = 'runway' | 'fitness' | 'fatloss';
+
 export interface Collections {
+  plans: PlanDoc;
   profile: Profile;
   habits: Habit;
   days: Day;
@@ -144,7 +165,7 @@ export interface Collections {
 }
 export type CollectionName = keyof Collections;
 export const COLLECTIONS: CollectionName[] = [
-  'profile', 'habits', 'days', 'workouts', 'measurements', 'photos', 'reviews',
+  'plans', 'profile', 'habits', 'days', 'workouts', 'measurements', 'photos', 'reviews',
   'milestones', 'checklists', 'transactions', 'categories', 'accounts', 'recurring', 'goals',
 ];
 export type Data = { [K in CollectionName]: Record<string, Collections[K]> };

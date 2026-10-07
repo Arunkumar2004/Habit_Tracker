@@ -24,7 +24,7 @@ function data(txs: Transaction[], cats: Category[] = [], monthlyBudget = 0, acco
     transactions: Object.fromEntries(txs.map((t) => [t.id, t])),
     categories: Object.fromEntries(cats.map((c) => [c.id, c])),
     accounts: Object.fromEntries(accounts.map((a) => [a.id, a])),
-    recurring: {}, goals: {},
+    recurring: {}, goals: {}, plans: {},
   };
   return d as Data;
 }

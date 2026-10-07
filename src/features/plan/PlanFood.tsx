@@ -6,6 +6,7 @@ import { goalFor, kcalAdjustment, targets, weeklyAverages } from '../../engines/
 import { addDays, todayISO, weekStart } from '../../lib/date';
 import { num } from '../../lib/format';
 import { useStore } from '../../store/store';
+import { usePlan } from '../../plan/resolve';
 import { Icon } from '../../ui/Icon';
 import { Bar, Ring, Segmented, haptic } from '../../ui/kit';
 import { CheckRow } from './PlanLists';
@@ -20,6 +21,7 @@ export function FoodView() {
   const measurements = useStore((s) => s.data.measurements);
   const proteinToday = useStore((s) => Number(s.data.days[today]?.habits.protein ?? 0));
   const [diet, setDiet] = useState<Diet>(profile?.diet ?? 'veg');
+  const plan = usePlan();
 
   const t = targets({ weightKg: profile?.weightKg ?? 0, bodyType: profile?.bodyType ?? 'average', proteinTargetG: profile?.proteinTargetG });
   const goal = goalFor(profile?.bodyType ?? 'average');
@@ -32,7 +34,7 @@ export function FoodView() {
     return kcalAdjustment(weeklyAverages(entries, [addDays(ws, -14), addDays(ws, -7), ws]), goal);
   }, [days, measurements, today, goal]);
 
-  const menu = DAY_MENUS[diet];
+  const menu = plan.menus[diet] ?? DAY_MENUS[diet];
   const kcalGap = t.kcal - menu.kcal;
 
   return (

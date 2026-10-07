@@ -2,7 +2,8 @@
 // Schedule engine (blueprint 6): day / week / month numbers, today's session, and which habits are due.
 // Pure functions: no store, no clock (the caller passes the date).
 import type { Data, Day, Habit, Profile } from '../types';
-import { GYM_ORDER, WEEK_SPLIT, type SessionKey } from '../data/plan';
+import type { SessionKey } from '../data/plan';
+import { planOf, type ResolvedPlan } from '../plan/resolve';
 import { addDays, diffDays, parseISO, toISO, weekStart, weekday } from '../lib/date';
 import { targets } from './nutrition';
 
@@ -38,42 +39,46 @@ export function dayInfo(profile: Profile | undefined, date: string): DayInfo {
 
 export interface SessionPick { session: SessionKey; label: string; gym: boolean; shifted: boolean }
 
-const LABEL: Record<SessionKey, string> = Object.fromEntries(WEEK_SPLIT.map((w) => [w.session, w.label])) as Record<SessionKey, string>;
-const isGymKey = (k: string): k is SessionKey => (GYM_ORDER as string[]).includes(k);
+/** Display label of a session in the person's plan (week entry first, then the session itself, then the key). */
+function labelOf(plan: ResolvedPlan, k: SessionKey): string {
+  return plan.week.find((w) => w.session === k)?.label ?? plan.sessions[k]?.label ?? k;
+}
+const isGymKey = (plan: ResolvedPlan, k: string): k is SessionKey => (plan.gymOrder as string[]).includes(k);
 
-/** Index into WEEK_SPLIT (0 = Monday … 6 = Sunday). */
+/** Index into the plan week (0 = Monday … 6 = Sunday). */
 export function splitIndex(date: string): number {
   return (weekday(date) + 6) % 7;
 }
 
 /** Finished gym workouts on a date (session keys, in the order they were saved). */
-function finishedGym(data: Data, date: string): SessionKey[] {
+function finishedGym(data: Data, date: string, plan: ResolvedPlan = planOf(data)): SessionKey[] {
   return Object.values(data.workouts)
-    .filter((w) => w.date === date && w.finished && isGymKey(w.session))
+    .filter((w) => w.date === date && w.finished && isGymKey(plan, w.session))
     .sort((a, b) => a.updatedAt - b.updatedAt)
     .map((w) => w.session as SessionKey);
 }
 
 /** Gym sessions already done this week, before `date`, in the order they happened. */
 export function gymDoneThisWeek(data: Data, date: string): SessionKey[] {
+  const plan = planOf(data);
   const done: SessionKey[] = [];
   const start = data.profile.me?.startDate;
   for (let d = weekStart(date); d < date; d = addDays(d, 1)) {
     // Days before the plan started owe nothing: their planned session counts as taken care of.
     if (start && d < start) {
-      const planned = WEEK_SPLIT[splitIndex(d)];
+      const planned = plan.week[splitIndex(d)];
       if (planned.gym && !done.includes(planned.session)) done.push(planned.session);
       continue;
     }
-    const fin = finishedGym(data, d);
+    const fin = finishedGym(data, d, plan);
     if (fin.length) {
       for (const s of fin) if (!done.includes(s)) done.push(s);
       continue;
     }
     // A ticked gym habit on a planned gym day counts as that day's session (the next one in order).
-    const planned = WEEK_SPLIT[splitIndex(d)];
+    const planned = plan.week[splitIndex(d)];
     if (planned.gym && data.days[d]?.habits.gym === true) {
-      const next = GYM_ORDER.find((s) => !done.includes(s));
+      const next = plan.gymOrder.find((s) => !done.includes(s));
       if (next) done.push(next);
     }
   }
@@ -81,21 +86,22 @@ export function gymDoneThisWeek(data: Data, date: string): SessionKey[] {
 }
 
 /**
- * Today's session from the week plan. On a gym day, the next gym session in GYM_ORDER that is not done yet this week
+ * Today's session from the person's week plan. On a gym day, the next gym session in the plan's gym order that is not done yet this week
  * (missed Monday → Tuesday is Upper A; shifted = true). A gym session already finished today is returned as is.
  */
 export function sessionFor(data: Data, date: string): SessionPick {
-  const planned = WEEK_SPLIT[splitIndex(date)];
-  const today = finishedGym(data, date);
+  const plan = planOf(data);
+  const planned = plan.week[splitIndex(date)];
+  const today = finishedGym(data, date, plan);
   if (today.length) {
     const s = today[0];
-    return { session: s, label: LABEL[s], gym: true, shifted: s !== planned.session };
+    return { session: s, label: labelOf(plan, s), gym: true, shifted: s !== planned.session };
   }
   if (!planned.gym) return { session: planned.session, label: planned.label, gym: false, shifted: false };
   const done = gymDoneThisWeek(data, date);
-  const next = GYM_ORDER.find((s) => !done.includes(s));
-  if (!next) return { session: 'recovery', label: LABEL.recovery, gym: false, shifted: true };
-  return { session: next, label: LABEL[next], gym: true, shifted: next !== planned.session };
+  const next = plan.gymOrder.find((s) => !done.includes(s));
+  if (!next) return { session: 'recovery', label: plan.sessions.recovery?.label ?? 'Recovery', gym: false, shifted: true };
+  return { session: next, label: labelOf(plan, next), gym: true, shifted: next !== planned.session };
 }
 
 // ---------- Habit values ----------

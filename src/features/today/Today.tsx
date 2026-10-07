@@ -7,7 +7,9 @@ import { Icon } from '../../ui/Icon';
 import { Confetti } from '../../ui/Confetti';
 import { addDays, diffDays, fmtShort, weekStart, weekday } from '../../lib/date';
 import { rupees } from '../../lib/format';
-import { GYM_ORDER, PLAN_RULE, ROADMAP, type SessionKey } from '../../data/plan';
+import type { SessionKey } from '../../data/plan';
+import { isGymSession } from '../../data/sessions';
+import { usePlan, type ResolvedPlan } from '../../plan/resolve';
 import {
   activeHabits, dayInfo, gymDoneThisWeek, habitProgress, habitTarget, isScheduled, monthStartDate, sessionFor,
 } from '../../engines/schedule';
@@ -27,7 +29,16 @@ const SESSION_META: Partial<Record<SessionKey, string>> = {
   cardio_skills: 'Cardio 30–45 min · posing 15 · grooming check · walk 20',
   rest: 'Rest. Sunday check: 15 min',
 };
-const GYM_LABEL: Record<string, string> = { upper_a: 'Upper A', lower_a: 'Lower A + Core', upper_b: 'Upper B', lower_b: 'Lower B + Core' };
+
+/** One quiet line under the session name. The default plan keeps its hand-written lines; an edited plan describes itself. */
+function sessionMeta(plan: ResolvedPlan, key: SessionKey): string | undefined {
+  if (plan.isDefault && SESSION_META[key]) return SESSION_META[key];
+  const def = plan.sessions[key];
+  if (!def) return SESSION_META[key];
+  if (isGymSession(def)) return `${def.exercises.length} ${def.exercises.length === 1 ? 'exercise' : 'exercises'} · ${def.minutes} min`;
+  return def.blocks.length ? def.blocks.map((b) => `${b.label} ${b.minutes}`).join(' · ') : def.focus;
+}
+const labelIn = (plan: ResolvedPlan, key: SessionKey) => plan.week.find((w) => w.session === key)?.label ?? plan.sessions[key]?.label ?? key;
 
 function greeting(d = new Date()): string {
   const h = d.getHours();
@@ -130,9 +141,10 @@ function SessionCard({ data, today }: { data: Data; today: string }) {
   const navigate = useStore((s) => s.navigate);
   const openSheet = useStore((s) => s.openSheet);
   const closeSheet = useStore((s) => s.closeSheet);
+  const plan = usePlan();
   const pick = sessionFor(data, today);
   const todays = Object.values(data.workouts).filter((w) => w.date === today);
-  const finished = todays.find((w) => w.finished && (GYM_ORDER as string[]).includes(w.session));
+  const finished = todays.find((w) => w.finished && (plan.gymOrder as string[]).includes(w.session));
   const inProgress = todays.find((w) => !w.finished && w.session === pick.session);
 
   if (!pick.gym) {
@@ -143,8 +155,8 @@ function SessionCard({ data, today }: { data: Data; today: string }) {
           <span className="td-session-icon"><Icon name={pick.session === 'rest' ? 'moon' : 'walk'} /></span>
           <div className="grow">
             <strong>{pick.label}</strong>
-            <div className="small muted">{SESSION_META[pick.session]}</div>
-            {pick.shifted && <span className="pill pill-ok td-chip">All 4 gym sessions done this week</span>}
+            <div className="small muted">{sessionMeta(plan, pick.session)}</div>
+            {pick.shifted && <span className="pill pill-ok td-chip">All {plan.gymOrder.length} gym sessions done this week</span>}
           </div>
         </div>
       </section>
@@ -153,7 +165,7 @@ function SessionCard({ data, today }: { data: Data; today: string }) {
 
   function openAnother() {
     const done = gymDoneThisWeek(data, addDays(today, 1));
-    const next = GYM_ORDER.find((s) => !done.includes(s)) ?? GYM_ORDER[0];
+    const next = plan.gymOrder.find((s) => !done.includes(s)) ?? plan.gymOrder[0] ?? pick.session;
     openSheet('Already trained today', () => (
       <div className="stack">
         <span className="pill pill-warn td-chip"><Icon name="info" size={14} /> Second gym session today</span>
@@ -165,13 +177,13 @@ function SessionCard({ data, today }: { data: Data; today: string }) {
           Open {pick.label}
         </button>
         <button className="btn btn-ghost btn-block" type="button" onClick={() => { closeSheet(); navigate('plan', 'workout', { session: next }); }}>
-          Start {GYM_LABEL[next]} anyway
+          Start {labelIn(plan, next)} anyway
         </button>
       </div>
     ));
   }
 
-  const status = finished ? `Done · ${finished.minutes} min` : inProgress ? 'In progress' : SESSION_META[pick.session];
+  const status = finished ? `Done · ${finished.minutes} min` : inProgress ? 'In progress' : sessionMeta(plan, pick.session);
   return (
     <section className="section" aria-label="Today's session">
       <span className="label">Today's session</span>
@@ -286,6 +298,7 @@ interface Smart { id: string; icon: string; title: string; detail: string; go: (
 
 function SmartCards({ data, today }: { data: Data; today: string }) {
   const navigate = useStore((s) => s.navigate);
+  const plan = usePlan();
   const profile = data.profile.me;
   const cards: Smart[] = [];
   const info = dayInfo(profile, today);
@@ -306,13 +319,13 @@ function SmartCards({ data, today }: { data: Data; today: string }) {
     });
   }
   if (profile && info.month >= 2 && diffDays(monthStartDate(profile.startDate, info.month), today) <= 2) {
-    const step = [...ROADMAP].reverse().find((r) => r.unlockMonth <= info.month);
+    const step = [...plan.roadmap].reverse().find((r) => r.unlockMonth <= info.month);
     if (step) {
       const fresh = step.unlockMonth === info.month;
       cards.push({
         id: 'month', icon: fresh ? 'star' : 'flame',
         title: fresh ? `Month ${info.month} unlocked: ${step.title}` : `Month ${info.month}: keep going with ${step.title}`,
-        detail: fresh ? `${step.detail} ${PLAN_RULE}` : step.detail, go: () => navigate('plan'),
+        detail: fresh ? (plan.rule ? `${step.detail} ${plan.rule}` : step.detail) : step.detail, go: () => navigate('plan'),
       });
     }
   }

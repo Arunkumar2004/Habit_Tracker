@@ -1,14 +1,15 @@
 // Plan tab home: Roadmap / Week / Food / Lists.
 import { useMemo, useState } from 'react';
-import type { Data, Milestone, Profile } from '../../types';
-import { PLAN_RULE, ROADMAP, WEEK_SPLIT, type RoadmapStep, type SessionKey } from '../../data/plan';
-import { SESSIONS, isGymSession, type Block } from '../../data/sessions';
+import type { Data, Milestone, PlanDoc, Profile } from '../../types';
+import type { RoadmapStep, SessionKey } from '../../data/plan';
+import { isGymSession, type Block } from '../../data/sessions';
+import { usePlan } from '../../plan/resolve';
 import { DAILY_ROUTINES, ROUTINES, type RoutineKey } from '../../data/routines';
 import { dayInfo, sessionFor } from '../../engines/schedule';
 import { addDays, fmtLong, parseISO, todayISO, weekStart } from '../../lib/date';
 import { useStore } from '../../store/store';
 import { Icon } from '../../ui/Icon';
-import { Bar, Segmented, ScreenHeader } from '../../ui/kit';
+import { Bar, Empty, Segmented, ScreenHeader } from '../../ui/kit';
 import { FoodView } from './PlanFood';
 import { ListsView } from './PlanLists';
 
@@ -17,13 +18,25 @@ let lastSeg: Seg = 'week';
 
 export function PlanHome() {
   const [seg, setSeg] = useState<Seg>(lastSeg);
+  const plan = usePlan();
+  const navigate = useStore((s) => s.navigate);
   const pick = (v: Seg) => {
     lastSeg = v;
     setSeg(v);
   };
   return (
     <div className="pl-screen">
-      <ScreenHeader title="Plan" />
+      <ScreenHeader
+        title="Plan"
+        right={
+          <button className="icon-btn" type="button" aria-label="Edit plan" onClick={() => navigate('plan', 'edit')}>
+            <Icon name="edit" />
+          </button>
+        }
+      />
+      {plan.name && (
+        <p className="small muted" style={{ margin: 'calc(-1 * var(--s3)) 0 var(--s3)' }}>{plan.name}</p>
+      )}
       <Segmented
         label="Plan section" value={seg} onChange={pick}
         options={[
@@ -55,8 +68,11 @@ function RoadmapView() {
   const today = todayISO();
   const profile = useStore((s) => s.data.profile.me);
   const milestones = useStore((s) => s.data.milestones);
+  const plan = usePlan();
+  const roadmap = plan.roadmap;
+  const total = roadmap.length;
   const info = dayInfo(profile, today);
-  const statuses = ROADMAP.map((r) => stepStatus(r, info.month, milestones[r.id]));
+  const statuses = roadmap.map((r) => stepStatus(r, info.month, milestones[r.id]));
   const doneCount = statuses.filter((s) => s === 'done').length;
   const currentIdx = statuses.findIndex((s) => s === 'active');
 
@@ -69,25 +85,35 @@ function RoadmapView() {
     useStore.getState().showToast(`Step ${r.n} reopened`, { undo: true });
   };
 
+  if (!total) {
+    return (
+      <Empty icon="target" title="No roadmap in this plan">
+        Add steps in Edit plan. Each step unlocks in a month you choose.
+      </Empty>
+    );
+  }
+
   return (
     <>
       <div className="pl-hero">
         <div className="row">
           <div className="grow">
-            <span className="label">Your 12-month runway</span>
+            <span className="label">Your 12-month {plan.template === 'runway' ? 'runway' : 'plan'}</span>
             <h2 className="pl-hero-title num">Month {Math.min(info.month, 12)} <small>of 12</small></h2>
             <span className="small muted num">Week {Math.min(info.week, 52)} of 52 · Day {info.dayN}</span>
           </div>
-          <div className="pl-hero-count num"><strong>{doneCount}</strong><small>/ 8 steps</small></div>
+          <div className="pl-hero-count num"><strong>{doneCount}</strong><small>/ {total} {total === 1 ? 'step' : 'steps'}</small></div>
         </div>
-        <Bar value={doneCount / 8} ok={doneCount === 8} />
+        <Bar value={doneCount / total} ok={doneCount === total} />
       </div>
-      <div className="pl-rule">
-        <Icon name="bulb" />
-        <span>{PLAN_RULE}</span>
-      </div>
+      {plan.rule && (
+        <div className="pl-rule">
+          <Icon name="bulb" />
+          <span>{plan.rule}</span>
+        </div>
+      )}
       <ol className="pl-timeline">
-        {ROADMAP.map((r, i) => {
+        {roadmap.map((r, i) => {
           const st = statuses[i];
           const m = milestones[r.id];
           return (
@@ -128,15 +154,16 @@ function RoadmapView() {
 
 // ---------------- Week ----------------
 
-function gymDoneOn(data: Data, date: string): string | null {
-  const w = Object.values(data.workouts).find((x) => x.date === date && x.finished && isGymSession(SESSIONS[x.session as SessionKey]));
-  if (w) return SESSIONS[w.session as SessionKey]?.short ?? 'Gym';
+function gymDoneOn(data: Data, date: string, sessions: PlanDoc['sessions']): string | null {
+  const w = Object.values(data.workouts).find((x) => x.date === date && x.finished && isGymSession(sessions[x.session as SessionKey]));
+  if (w) return sessions[w.session as SessionKey]?.short ?? 'Gym';
   return data.days[date]?.habits.gym === true ? 'Done' : null;
 }
 
 function WeekView() {
   const today = todayISO();
   const data = useStore((s) => s.data);
+  const plan = usePlan();
   const profile = data.profile.me as Profile | undefined;
   const month = dayInfo(profile, today).month;
   const ws = weekStart(today);
@@ -163,13 +190,27 @@ function WeekView() {
       </div>
 
       <div className="stack" style={{ marginTop: 16 }}>
-        {WEEK_SPLIT.map((d, i) => {
+        {plan.week.map((d, i) => {
           const date = addDays(ws, i);
           const isToday = date === today;
           const past = date < today;
           const key: SessionKey = isToday && pick.gym ? pick.session : d.session;
-          const def = SESSIONS[key];
-          const doneLabel = def.kind === 'gym' ? gymDoneOn(data, date) : null;
+          const def = plan.sessions[key];
+          if (!def) {
+            return (
+              <article key={d.day} className={`pl-day card ${isToday ? 'is-today' : ''} ${past ? 'is-past' : ''}`} aria-current={isToday ? 'date' : undefined}>
+                <div className="pl-day-head">
+                  <div className="pl-day-date">
+                    <span className="label">{d.day}</span>
+                    <span className="num">{parseISO(date).getDate()}</span>
+                  </div>
+                  <div className="grow"><h3>{d.label}</h3></div>
+                  {isToday && <span className="pill pill-warn">Today</span>}
+                </div>
+              </article>
+            );
+          }
+          const doneLabel = def.kind === 'gym' ? gymDoneOn(data, date, plan.sessions) : null;
           return (
             <article key={d.day} className={`pl-day card ${isToday ? 'is-today' : ''} ${past ? 'is-past' : ''}`} aria-current={isToday ? 'date' : undefined}>
               <div className="pl-day-head">

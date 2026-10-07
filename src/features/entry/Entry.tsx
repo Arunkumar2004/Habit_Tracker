@@ -1,18 +1,20 @@
 // The entry experience, shown until the profile is set up:
-//   Welcome → Account (create / sign in, optional) → 6 setup questions → "Your plan is ready" → the app.
+//   Welcome → Account (create / sign in, optional) → 7 setup questions → "Your plan is ready" → the app.
 // A returning user who signs in gets their data restored and goes straight into the app.
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import './entry.css';
 import { useStore } from '../../store/store';
 import { runSeeders } from '../../store/registry';
 import { cloudConfigured, cloudState, resetPassword, signIn, signUp, subscribeCloud } from '../../store/cloud';
-import { DEFAULT_HABITS, ROADMAP } from '../../data/plan';
+import { DEFAULT_HABITS } from '../../data/plan';
+import { DEFAULT_TEMPLATE, TEMPLATES, TEMPLATE_ORDER } from '../../plan/templates';
+import { savePlan } from '../../plan/resolve';
 import { targets } from '../../engines/nutrition';
 import { addDays, fmtLong, fmtShort, todayISO, weekday } from '../../lib/date';
 import { rupees } from '../../lib/format';
 import { haptic } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
-import type { BodyType, Diet } from '../../types';
+import type { BodyType, Diet, PlanTemplateId } from '../../types';
 import { authMessage, useCloud } from '../progress/Account';
 import { Dial, Mark, Option, Runway, StepFrame, Title } from './parts';
 
@@ -25,10 +27,10 @@ type Phase =
   | { k: 'reveal' };
 
 interface Answers {
-  name: string; startDate: string; heightCm: number; weightKg: number; bodyType: BodyType; diet: Diet; budget: number;
+  name: string; goal: PlanTemplateId; startDate: string; heightCm: number; weightKg: number; bodyType: BodyType; diet: Diet; budget: number;
 }
 
-const SETUP_STEPS = 6;
+const SETUP_STEPS = 7;
 const BUDGETS = [10000, 15000, 20000, 30000];
 
 export function Entry() {
@@ -36,7 +38,7 @@ export function Entry() {
   const signedIn = cloud.configured && cloud.status !== 'signed_out' && cloud.status !== 'off';
   const [phase, setPhase] = useState<Phase>({ k: 'welcome' });
   const [a, setA] = useState<Answers>({
-    name: '', startDate: todayISO(), heightCm: 185, weightKg: 72, bodyType: 'average', diet: 'non_veg', budget: 20000,
+    name: '', goal: DEFAULT_TEMPLATE, startDate: todayISO(), heightCm: 185, weightKg: 72, bodyType: 'average', diet: 'non_veg', budget: 20000,
   });
   const patch = (p: Partial<Answers>) => setA((x) => ({ ...x, ...p }));
   const go = (p: Phase) => {
@@ -104,7 +106,7 @@ export function Entry() {
     go(step + 1 < SETUP_STEPS ? { k: 'setup', step: step + 1 } : { k: 'reveal' });
   };
   const back = () => go(step === 0 ? { k: 'welcome' } : { k: 'setup', step: step - 1 });
-  const valid = step === 0 ? a.name.trim().length > 0 : step === 5 ? a.budget >= 0 : true;
+  const valid = step === 0 ? a.name.trim().length > 0 : step === 6 ? a.budget >= 0 : true;
   const today = todayISO();
   const nextMonday = addDays(today, ((8 - weekday(today)) % 7) || 7);
   const inches = a.heightCm / 2.54;
@@ -128,6 +130,19 @@ export function Entry() {
           )}
           {step === 1 && (
             <>
+              <Title
+                eyebrow="Your goal" title="What are you training for?"
+                sub="Pick a starting plan. You can change any part of it later in Plan → Edit plan."
+              />
+              <div className="en-options">
+                {TEMPLATE_ORDER.map((id) => (
+                  <Option key={id} on={a.goal === id} title={TEMPLATES[id].name} sub={TEMPLATES[id].tagline} onClick={() => patch({ goal: id })} />
+                ))}
+              </div>
+            </>
+          )}
+          {step === 2 && (
+            <>
               <Title eyebrow="Your plan" title="When does Day 1 begin?" sub="Your twelve months are counted from this date." />
               <div className="en-options">
                 <Option on={a.startDate === today} title="Today" right={fmtShort(today)} onClick={() => patch({ startDate: today })} />
@@ -140,7 +155,7 @@ export function Entry() {
               </label>
             </>
           )}
-          {step === 2 && (
+          {step === 3 && (
             <>
               <Title eyebrow="Starting point" title="Your height and weight" sub="Sets your calorie and protein targets. Only you can see this." />
               <div className="en-dials">
@@ -152,7 +167,7 @@ export function Entry() {
               </div>
             </>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <>
               <Title eyebrow="Starting point" title="How would you describe your build?" sub="It decides whether you eat a little more, the same, or a little less." />
               <div className="en-options">
@@ -162,7 +177,7 @@ export function Entry() {
               </div>
             </>
           )}
-          {step === 4 && (
+          {step === 5 && (
             <>
               <Title eyebrow="Food" title="How do you eat?" sub="Your daily meal plan is built around this." />
               <div className="en-options">
@@ -171,7 +186,7 @@ export function Entry() {
               </div>
             </>
           )}
-          {step === 5 && (
+          {step === 6 && (
             <>
               <Title eyebrow="Money" title="Your monthly budget" sub="Runway OS shows what is safe to spend each day." />
               <div className="en-budgets">
@@ -383,10 +398,13 @@ function RevealScreen({ a, onBack }: { a: Answers; onBack: () => void }) {
   const patchDay = useStore((s) => s.patchDay);
   const t = targets({ weightKg: a.weightKg, bodyType: a.bodyType });
   const name = a.name.trim();
+  const plan = useMemo(() => TEMPLATES[a.goal].build(), [a.goal]);
+  const more = plan.roadmap.length - 3;
 
   function enter() {
     haptic(20);
     const today = todayISO();
+    savePlan(TEMPLATES[a.goal].build());
     for (const h of DEFAULT_HABITS) if (!useStore.getState().data.habits[h.id]) put('habits', h, { silent: true });
     runSeeders(useStore.getState());
     if (a.startDate <= today) patchDay(today, { weightKg: a.weightKg });
@@ -400,22 +418,22 @@ function RevealScreen({ a, onBack }: { a: Answers; onBack: () => void }) {
     <div className="en">
       <StepFrame onBack={onBack} action={<button type="button" className="en-cta" onClick={enter}>Enter Runway OS</button>}>
         <div className="en-in">
-          <Title eyebrow="Your plan is ready" title={`Welcome, ${name}.`} sub={`Day 1 is ${fmtLong(a.startDate)}. Here is where you start.`} />
+          <Title eyebrow={`Your ${plan.name} plan is ready`} title={`Welcome, ${name}.`} sub={`Day 1 is ${fmtLong(a.startDate)}. Here is where you start.`} />
           <div className="en-stats">
             <div><span>Calories</span><b className="num">{t.kcal.toLocaleString('en-IN')}</b><small>kcal a day</small></div>
             <div><span>Protein</span><b className="num">{t.proteinTarget}</b><small>grams a day</small></div>
             <div><span>Safe to spend</span><b className="num">{rupees(a.budget / 30)}</b><small>a day</small></div>
-            <div><span>Your runway</span><b className="num">12</b><small>months · 52 weeks</small></div>
+            <div><span>Your plan</span><b className="num">12</b><small>months · 52 weeks</small></div>
           </div>
           <ol className="en-path">
-            {ROADMAP.slice(0, 3).map((r, i) => (
+            {plan.roadmap.slice(0, 3).map((r, i) => (
               <li key={r.id} data-first={i === 0}>
                 <span className="en-path-when">{r.when}</span>
                 <strong>{r.title}</strong>
                 <span className="en-path-detail">{r.detail}</span>
               </li>
             ))}
-            <li className="en-path-more">…and {ROADMAP.length - 3} more steps to your first castings</li>
+            {more > 0 && <li className="en-path-more">…and {more} more {more === 1 ? 'step' : 'steps'} in your plan</li>}
           </ol>
         </div>
       </StepFrame>

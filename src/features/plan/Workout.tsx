@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from '../../app/screens';
 import type { Data, Workout, WorkoutExercise, WorkoutSet } from '../../types';
-import { GYM_ORDER, type SessionKey } from '../../data/plan';
-import { CORE_CIRCUIT, SESSIONS, WARMUP, isGymSession, setsLabel, type Exercise, type GymSession } from '../../data/sessions';
+import type { SessionKey } from '../../data/plan';
+import { usePlan } from '../../plan/resolve';
+import { CORE_CIRCUIT, WARMUP, isGymSession, setsLabel, type Exercise, type GymSession } from '../../data/sessions';
 import {
   PLATEAU_TEXT, easySets, easyWeekStatus, isPlateau, lastLine, lastPerformance, pbsBeaten, suggestNext, workingKg,
   type LastPerformance, type PbBeaten, type Suggestion,
@@ -15,6 +16,7 @@ import { uid } from '../../lib/format';
 import { useStore } from '../../store/store';
 import { Icon } from '../../ui/Icon';
 import { Empty, ScreenHeader, haptic } from '../../ui/kit';
+import { ExerciseAnimation } from './anim';
 import { HowTo, RestBar, SetTable } from './SetTable';
 import { Stepper, clock, vibrate } from './Stepper';
 import { WorkoutDone } from './WorkoutDone';
@@ -23,7 +25,8 @@ import { WorkoutDone } from './WorkoutDone';
 export const EASY_LIST_ID = 'pl-easy-weeks';
 
 export function WorkoutScreen({ params }: ScreenProps) {
-  const def = SESSIONS[params.session as SessionKey];
+  const plan = usePlan();
+  const def = plan.sessions[params.session as SessionKey];
   const navigate = useStore((s) => s.navigate);
   if (!isGymSession(def)) {
     const goToday = () => {
@@ -118,8 +121,9 @@ function Logger({ session }: { session: GymSession }) {
     setNow(Date.now());
   };
 
+  const plan = usePlan();
   const otherToday = useStore((s) =>
-    Object.values(s.data.workouts).find((w) => w.date === today && w.finished && w.id !== wid && (GYM_ORDER as string[]).includes(w.session)),
+    Object.values(s.data.workouts).find((w) => w.date === today && w.finished && w.id !== wid && (plan.gymOrder as string[]).includes(w.session)),
   );
 
   // Ticks the clock and the rest timer.
@@ -228,7 +232,7 @@ function Logger({ session }: { session: GymSession }) {
       {otherToday && (
         <div className="pl-banner warn" role="note">
           <Icon name="info" />
-          <span>You already finished {SESSIONS[otherToday.session as SessionKey]?.label ?? 'a gym session'} today. The plan says one gym session a day; muscles grow while you rest. You can still carry on.</span>
+          <span>You already finished {plan.sessions[otherToday.session as SessionKey]?.label ?? 'a gym session'} today. The plan says one gym session a day; muscles grow while you rest. You can still carry on.</span>
         </div>
       )}
       {init.draft && phase === 'log' && doneSets > 0 && (
@@ -311,6 +315,7 @@ function Logger({ session }: { session: GymSession }) {
           {ex.name}
           {ex.priority && <span className="pl-star" title="Priority: shoulders and back"><Icon name="star" size={18} label="Priority" /></span>}
         </h2>
+        <ExerciseAnimation exerciseId={ex.id} name={ex.name} />
         <div className="pl-ex-info">
           <div className="small">
             <span className="muted">Last time: </span>

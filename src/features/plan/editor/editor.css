@@ -1,0 +1,128 @@
+/* Plan editor (prefix pe-). Colours only through tokens. */
+.pe-screen { display: block; }
+.pe-body { margin-top: var(--s4); animation: up .2s var(--ease); }
+.pe-screen .grow { flex: 1; min-width: 0; }
+
+/* ---------- Plan card ---------- */
+.pe-plan { display: grid; gap: var(--s2); }
+.pe-plan-name { font-size: var(--fs-h2); font-weight: 700; border-color: transparent; background: var(--surface-2); }
+.pe-plan-name:hover { border-color: var(--line); }
+.pe-plan-from { margin: 0; }
+.pe-plan-from strong { color: var(--ink); font-weight: 600; }
+.pe-plan-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin: 0 calc(-1 * var(--s3)) calc(-1 * var(--s2)); }
+.pe-plan-actions .btn { color: var(--muted); font-weight: 500; font-size: var(--fs-small); padding: 0 var(--s3); }
+.pe-plan-actions .btn:hover { color: var(--ink); background: var(--surface-2); }
+
+.pe-confirm {
+  display: grid; gap: var(--s3); padding: var(--s3); border-radius: var(--r-btn);
+  background: var(--danger-soft); color: var(--ink); animation: up .15s var(--ease);
+}
+.pe-confirm strong { font-weight: 600; }
+.pe-confirm-actions, .pe-sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.pe-sheet-actions { margin-top: var(--s2); }
+
+/* ---------- Section switcher (5 parts must fit 328 px) ---------- */
+.pe-seg { margin-top: var(--s4); }
+.pe-seg .seg { gap: 2px; }
+.pe-seg .seg button { min-height: 40px; padding: 0 2px; font-size: 12px; letter-spacing: -.01em; white-space: nowrap; }
+
+/* ---------- Rows ---------- */
+.pe-list { list-style: none; margin: 0; padding: 0; }
+.pe-row { display: flex; align-items: center; min-height: 60px; }
+.pe-row + .pe-row { border-top: 1px solid var(--line); }
+.pe-row-main {
+  flex: 1; min-width: 0; min-height: 60px; display: flex; align-items: center; gap: var(--s3);
+  border: 0; background: none; text-align: left; padding: var(--s2) var(--s2) var(--s2) var(--s4); border-radius: 0;
+}
+.pe-row-main:hover { background: var(--surface-2); }
+.pe-row-main:focus-visible { outline-offset: -2px; }
+.pe-row-text { flex: 1; min-width: 0; display: grid; }
+.pe-row-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: var(--s2); }
+.pe-row-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe-row-edit { color: var(--muted); flex: none; opacity: .7; }
+.pe-row-actions { display: flex; align-items: center; flex: none; padding-right: 4px; }
+
+.pe-n {
+  width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--accent); font-size: var(--fs-small); font-weight: 700;
+}
+.pe-time { width: 44px; flex: none; font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+.pe-lead-ico {
+  width: 32px; height: 32px; flex: none; border-radius: 10px; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent);
+}
+
+.pe-icon-btn {
+  width: 44px; height: 44px; flex: none; border: 0; border-radius: var(--r-btn); background: transparent;
+  display: grid; place-items: center; color: var(--muted);
+}
+.pe-icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.pe-icon-btn:disabled { opacity: .3; cursor: default; }
+.pe-rot-up, .pe-rot-down { display: grid; place-items: center; }
+.pe-rot-up { transform: rotate(-90deg); }
+.pe-rot-down { transform: rotate(90deg); }
+.pe-remove.is-armed {
+  width: auto; min-width: 72px; padding: 0 var(--s2); background: var(--danger-soft); color: var(--danger);
+  animation: up .12s var(--ease);
+}
+.pe-remove.is-armed:hover { background: var(--danger-soft); color: var(--danger); }
+.pe-remove-text { font-size: var(--fs-small); font-weight: 600; }
+
+.pe-add { border-style: dashed; color: var(--accent); background: transparent; }
+.pe-add svg { width: 18px; height: 18px; }
+.pe-hint { margin: 0; }
+.pe-list-head { margin-top: var(--s2); }
+
+/* ---------- Week ---------- */
+.pe-week { list-style: none; margin: 0; padding: 0; }
+.pe-week-row { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3) var(--s2) var(--s4); min-height: 60px; }
+.pe-week-row + .pe-week-row { border-top: 1px solid var(--line); }
+.pe-week-day { width: 40px; flex: none; font-weight: 700; font-size: var(--fs-small); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.pe-week-row select { flex: 1; min-width: 0; }
+
+/* ---------- Workouts ---------- */
+.pe-chips .chip { min-height: 44px; padding: 0 var(--s4); }
+.pe-card { gap: var(--s3); }
+
+/* ---------- Meals ---------- */
+.pe-totals { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); padding: var(--s3) var(--s4); }
+.pe-totals > div { display: grid; gap: 2px; }
+.pe-totals strong { font-size: var(--fs-h2); font-weight: 700; }
+
+/* ---------- Sheets ---------- */
+.pe-form { gap: var(--s3); }
+.pe-textarea { resize: vertical; min-height: 88px; line-height: 1.45; }
+.pe-preview { margin: 0; padding: var(--s2) var(--s3); border-radius: 10px; background: var(--surface-2); color: var(--ink); }
+.pe-search { position: relative; }
+.pe-search > svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.pe-search .input { padding-left: 38px; }
+.pe-add-custom { justify-content: flex-start; color: var(--accent); border-style: dashed; background: transparent; min-width: 0; }
+.pe-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pe-pick-list { list-style: none; margin: 0; padding: 0; }
+.pe-pick-list li + li { border-top: 1px solid var(--line); }
+.pe-pick-list .list-item + .list-item { border-top: 0; }
+.pe-pick { color: var(--ink); }
+.pe-pick > svg { color: var(--accent); flex: none; }
+.pe-pick:disabled { cursor: default; }
+.pe-pick:disabled .pe-row-title { color: var(--muted); }
+.pe-pick .grow { display: grid; }
+.pe-kind { text-transform: capitalize; }
+
+.pe-group { border: 1px solid var(--line); border-radius: var(--r-btn); padding: var(--s2) var(--s3) var(--s3); margin: 0; display: grid; gap: var(--s2); background: var(--surface); }
+.pe-group legend { padding: 0 4px; }
+.pe-add-group { justify-self: start; color: var(--accent); }
+
+.pe-templates { list-style: none; margin: 0; padding: 0; }
+.pe-templates li + li { border-top: 1px solid var(--line); }
+.pe-template { min-height: 72px; color: var(--ink); }
+.pe-template .grow { display: grid; gap: 2px; }
+.pe-template > svg { color: var(--muted); flex: none; }
+.pe-tagline { white-space: normal; }
+.pe-current { margin-left: 2px; }
+.pe-pick .grow, .pe-template .grow { flex: 1; min-width: 0; }
+
+/* Narrow phones: give names the room; the whole row still opens the editor. */
+@media (max-width: 400px) {
+  .pe-row-edit { display: none; }
+  .pe-row-main { padding-left: var(--s3); gap: var(--s2); }
+}

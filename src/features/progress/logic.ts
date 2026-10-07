@@ -1,7 +1,7 @@
 // Pure derivations for the Progress screens: "Is it working?" signals, weekly log, chart series.
 import { REVIEW_AREAS, type Data, type Measurement, type PhotoPose, type ReviewArea } from '../../types';
 import { addDays, diffDays, weekStart } from '../../lib/date';
-import { GYM_ORDER, ROADMAP } from '../../data/plan';
+import { planOf } from '../../plan/resolve';
 import { targets } from '../../engines/nutrition';
 import { dayInfo } from '../../engines/schedule';
 
@@ -100,14 +100,18 @@ export function signals(data: Data, today: string): Signal[] {
 
   // Pro: roadmap steps unlocked before this month are done.
   const month = dayInfo(p, today).month;
-  const unlocked = ROADMAP.filter((s) => s.unlockMonth <= month);
-  const current = unlocked.find((s) => data.milestones[s.id]?.status !== 'done') ?? unlocked[unlocked.length - 1] ?? ROADMAP[0];
-  const behind = ROADMAP.filter((s) => s.unlockMonth < month && data.milestones[s.id]?.status !== 'done').length;
-  const allDone = ROADMAP.every((s) => data.milestones[s.id]?.status === 'done');
-  const pro: Signal = {
-    id: 'pro', label: 'Pro', state: allDone || behind === 0 ? 'ok' : 'warn',
-    detail: allDone ? 'All 8 steps done' : `Step ${current.n} of 8: ${current.title}${behind ? ` · ${behind} behind` : ''}`,
-  };
+  const roadmap = planOf(data).roadmap;
+  const steps = roadmap.length;
+  const unlocked = roadmap.filter((s) => s.unlockMonth <= month);
+  const current = unlocked.find((s) => data.milestones[s.id]?.status !== 'done') ?? unlocked[unlocked.length - 1] ?? roadmap[0];
+  const behind = roadmap.filter((s) => s.unlockMonth < month && data.milestones[s.id]?.status !== 'done').length;
+  const allDone = steps > 0 && roadmap.every((s) => data.milestones[s.id]?.status === 'done');
+  const pro: Signal = !current
+    ? { id: 'pro', label: 'Pro', state: 'none', detail: 'No roadmap steps in this plan' }
+    : {
+      id: 'pro', label: 'Pro', state: allDone || behind === 0 ? 'ok' : 'warn',
+      detail: allDone ? `All ${steps} steps done` : `Step ${current.n} of ${steps}: ${current.title}${behind ? ` · ${behind} behind` : ''}`,
+    };
   return [body, face, walk, pro];
 }
 
@@ -146,9 +150,10 @@ export function weekLog(data: Data, ws: string, today: string): WeekLog {
   const waist = [...msWeek].reverse().find((m) => m.waistCm !== undefined)?.waistCm;
 
   const workouts = Object.values(data.workouts).filter((w) => w.finished && w.date >= ws && w.date <= end);
-  const gymDates = new Set(workouts.filter((w) => (GYM_ORDER as string[]).includes(w.session)).map((w) => w.date));
+  const plan = planOf(data);
+  const gymDates = new Set(workouts.filter((w) => (plan.gymOrder as string[]).includes(w.session)).map((w) => w.date));
   const gymTicks = days.filter((d) => data.days[d]?.habits.gym === true).length;
-  const gym = Math.min(4, gymDates.size || gymTicks);
+  const gym = Math.min(Math.max(1, plan.gymOrder.length), gymDates.size || gymTicks);
 
   const sleeps = days.map((d) => data.days[d]?.habits.sleep).filter((v): v is number => typeof v === 'number' && v > 0);
   const proteinDays = days.filter((d) => {

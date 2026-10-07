@@ -1,11 +1,12 @@
 // Lists: casting-ready, shoot-day, wardrobe, digitals, and the "Is this agency real?" check.
 import { useState, type ReactNode } from 'react';
-import { AGENCY_CHECK, AGENCY_CHECK_ID, CHECKLISTS, agencyVerdict, type ChecklistDef } from '../../data/checklists';
+import { AGENCY_CHECK, AGENCY_CHECK_ID, agencyVerdict, type ChecklistDef } from '../../data/checklists';
 import { dayInfo } from '../../engines/schedule';
 import { todayISO } from '../../lib/date';
 import { useStore } from '../../store/store';
+import { usePlan } from '../../plan/resolve';
 import { Icon } from '../../ui/Icon';
-import { Bar, haptic } from '../../ui/kit';
+import { Bar, Empty, haptic } from '../../ui/kit';
 
 /** One tickable row (whole row is the tap target). */
 export function CheckRow({ checked, onToggle, label, children }: { checked: boolean; onToggle: () => void; label: string; children: ReactNode }) {
@@ -24,6 +25,8 @@ let openList: string | null = null;
 export function ListsView() {
   const [open, setOpen] = useState<string | null>(openList);
   const month = dayInfo(useStore((s) => s.data.profile.me), todayISO()).month;
+  const lists = usePlan().checklists;
+  const navigate = useStore((s) => s.navigate);
   const toggleOpen = (id: string) => {
     const next = open === id ? null : id;
     openList = next;
@@ -31,7 +34,17 @@ export function ListsView() {
   };
   return (
     <div className="stack" style={{ marginTop: 16 }}>
-      {CHECKLISTS.map((def) => (
+      {lists.length === 0 && (
+        <div className="card">
+          <Empty icon="list" title="No lists in this plan">
+            Add one in Edit plan.
+          </Empty>
+          <button type="button" className="btn btn-block" onClick={() => navigate('plan', 'edit')}>
+            <Icon name="edit" /> Edit plan
+          </button>
+        </div>
+      )}
+      {lists.map((def) => (
         <ChecklistCard key={def.id} def={def} month={month} open={open === def.id} onOpen={() => toggleOpen(def.id)} />
       ))}
       <AgencyCheck />
