@@ -8,6 +8,8 @@ import { targets } from '../../engines/nutrition';
 import type { BodyType, Diet } from '../../types';
 import { DEFAULT_HABITS } from '../../data/plan';
 import { runSeeders } from '../../store/registry';
+import { cloudConfigured } from '../../store/cloud';
+import { SignInForm } from './Account';
 
 const STEPS = ['You', 'Body', 'Food', 'Money'];
 
@@ -27,6 +29,25 @@ const toNum = (s: string) => {
   const n = Number(s.replace(',', '.'));
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
+
+/** New phone: sign in and the account's data replaces onboarding (the shell switches once the profile arrives). */
+function RestoreAccount() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card stack" style={{ marginTop: 'var(--s4)' }}>
+      {!open ? (
+        <button type="button" className="btn btn-ghost btn-block" onClick={() => setOpen(true)}>
+          Already using Runway OS? Sign in to restore your data
+        </button>
+      ) : (
+        <>
+          <strong>Sign in to restore</strong>
+          <SignInForm compact />
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Onboarding() {
   const put = useStore((s) => s.put);
@@ -161,6 +182,8 @@ export function Onboarding() {
           {step < 3 ? 'Continue' : 'Start my plan'}
         </button>
       </div>
+
+      {step === 0 && cloudConfigured && <RestoreAccount />}
     </div>
   );
 }

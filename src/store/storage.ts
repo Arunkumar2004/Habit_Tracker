@@ -6,7 +6,18 @@
 import { COLLECTIONS, type CollectionName, type Data, type Base } from '../types';
 
 type AnyRec = Base & Record<string, unknown>;
-export type RemoteListener = (col: CollectionName, rec: AnyRec) => void;
+/** force: apply even when the local copy is newer (first sync of a device into an account: the account wins). */
+export type RemoteListener = (col: CollectionName, rec: AnyRec, force?: boolean) => void;
+
+/** A second sync target (Supabase cloud sync, src/store/cloud.ts) plugs in here. */
+export interface SyncTarget {
+  start(onRemote: RemoteListener): void;
+  changed(col: CollectionName, id: string): void;
+}
+let syncTarget: SyncTarget | null = null;
+export function setSyncTarget(t: SyncTarget) {
+  syncTarget = t;
+}
 
 export function emptyData(): Data {
   const d = {} as Data;
@@ -68,6 +79,21 @@ async function idbPut(col: CollectionName, rec: AnyRec) {
   } catch {
     /* cache only; the online copy still saves */
   }
+}
+
+/** One cached record, tombstones included (the store drops deleted records, the cache keeps them). */
+async function idbGet(col: CollectionName, id: string): Promise<AnyRec | undefined> {
+  const db = await idb();
+  if (!db) return undefined;
+  return new Promise((resolve) => {
+    try {
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(`${col}/${id}`);
+      req.onsuccess = () => resolve(req.result as AnyRec | undefined);
+      req.onerror = () => resolve(undefined);
+    } catch {
+      resolve(undefined);
+    }
+  });
 }
 
 async function idbClear() {
@@ -174,12 +200,32 @@ export const storage = {
   async load(onRemote: RemoteListener): Promise<Data> {
     const data = await idbLoadAll();
     void connectOnline(onRemote);
+    syncTarget?.start(onRemote);
     return data;
   },
   save(col: CollectionName, rec: AnyRec) {
-    void idbPut(col, rec);
+    // Cache first, then tell the cloud: it reads the record back from the cache (tombstones included).
+    void idbPut(col, rec).then(() => syncTarget?.changed(col, rec.id));
     pending.set(`${col}:${rec.id}`, { col, rec });
     if (coll) scheduleFlush();
+  },
+  /** One record from the on-device cache, tombstones included. */
+  get(col: CollectionName, id: string) {
+    return idbGet(col, id);
+  },
+  /** Every cached record key ('col/id'), tombstones included. */
+  async keys(): Promise<string[]> {
+    const db = await idb();
+    if (!db) return [];
+    return new Promise((resolve) => {
+      try {
+        const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAllKeys();
+        req.onsuccess = () => resolve((req.result as IDBValidKey[]).map(String));
+        req.onerror = () => resolve([]);
+      } catch {
+        resolve([]);
+      }
+    });
   },
   async cacheOnly(col: CollectionName, rec: AnyRec) {
     await idbPut(col, rec);

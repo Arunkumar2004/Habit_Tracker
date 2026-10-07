@@ -7,6 +7,8 @@ import { Icon } from '../../ui/Icon';
 import { targets } from '../../engines/nutrition';
 import { backupDueDays, backupFilename, parseBackup, serialiseBackup, type ParseResult } from '../../lib/backup';
 import { fmtLong, toISO } from '../../lib/date';
+import { cloudConfigured } from '../../store/cloud';
+import { AccountSection } from './Account';
 import { COLLECTIONS, type BodyType, type CollectionName, type Diet, type Profile, type ThemePref } from '../../types';
 
 interface DownloadsApi { save(req: { filename: string; data: string | Blob }): Promise<{ status: string }> }
@@ -350,15 +352,18 @@ function SettingsScreen() {
   return (
     <div>
       <ScreenHeader title="Settings" back />
+      <AccountSection />
       <ProfileSection p={p} />
 
       <section className="section">
         <h2 className="label">Data</h2>
         <div className="card stack">
-          <div className="pg-status" data-on={on} role="status">
-            <i aria-hidden="true" />
-            {on ? 'Saved online' : sync === 'connecting' ? 'Connecting…' : 'Saved on this phone only'}
-          </div>
+          {!cloudConfigured && (
+            <div className="pg-status" data-on={on} role="status">
+              <i aria-hidden="true" />
+              {on ? 'Saved online' : sync === 'connecting' ? 'Connecting…' : 'Saved on this phone only'}
+            </div>
+          )}
           <span className="small muted">
             {p.lastBackupAt ? `Last backup ${fmtLong(toISO(new Date(p.lastBackupAt)))}` : 'No backup yet'}
           </span>

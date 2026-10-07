@@ -165,9 +165,9 @@ export const useStore = create<State>()((set, get) => {
 
 /** Load storage once at startup, then merge remote records as they arrive (newer `updatedAt` wins). */
 export async function bootStore(seed: (s: State) => void) {
-  const data = await storage.load((col, rec) => {
+  const data = await storage.load((col, rec, force) => {
     const cur = useStore.getState().data[col][rec.id];
-    if (cur && cur.updatedAt >= rec.updatedAt) return;
+    if (!force && cur && cur.updatedAt >= rec.updatedAt) return;
     if (!cur && rec.deleted) return;
     useStore.setState((s) => {
       const next = { ...s.data[col] } as Record<string, unknown>;
@@ -179,6 +179,15 @@ export async function bootStore(seed: (s: State) => void) {
   });
   useStore.setState({ data, ready: true });
   seed(useStore.getState());
+}
+
+/**
+ * Empty this device (store + cache) without recording deletions, so nothing is synced as deleted.
+ * Used when a user signs out or a different user signs in on the same phone.
+ */
+export async function wipeLocal() {
+  await storage.clearLocal();
+  useStore.setState({ data: emptyData(), undoStack: [], route: { tab: 'today' }, history: [], sheet: null, toast: null });
 }
 
 // ---------- Selectors ----------

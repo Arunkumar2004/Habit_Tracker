@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import './styles/tokens.css';
 import './styles/base.css';
 import { App } from './app/App';
+import './store/cloud'; // registers Supabase cloud sync (self-hosted app only) before storage loads
 import { bootStore } from './store/store';
 import { runSeeders } from './store/registry';
 import { DEFAULT_HABITS } from './data/plan';

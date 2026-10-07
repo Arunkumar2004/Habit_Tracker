@@ -41,7 +41,8 @@ Runway OS turns a 12-month runway model plan into daily actions. It answers one 
 - whether the body, face, walk and portfolio are actually improving month by month.
 
 It is a mobile-first Progressive Web App: open the link, add it to the home screen, and it runs full screen,
-offline, with its own icon. There is no account and no server: data stays on the device.
+offline, with its own icon. Data is saved on the device first and, after signing in, synced to your own private
+account so it survives a lost phone.
 
 ## Features
 
@@ -94,12 +95,13 @@ offline, with its own icon. There is no account and no server: data stays on the
 | Logic | Pure TypeScript engines: schedule, score, streak, progression, nutrition, budget, insights |
 | Styling | Plain CSS with design tokens for light and dark themes, Poppins |
 | Charts | Hand-written SVG: donut, bars, line, radar, heatmap, sparkline |
-| Storage | IndexedDB behind a single storage adapter |
+| Storage | IndexedDB behind a single storage adapter, synced to Supabase (Postgres, Row Level Security) when signed in |
+| Auth | Supabase email one-time code |
 | Offline | Web app manifest and a service worker |
 | Tests | Vitest |
 | Hosting | Vercel (static) |
 
-No backend, no analytics and no third-party runtime services apart from Google Fonts.
+No analytics. The only runtime services are Google Fonts and, for signed-in users, Supabase.
 
 ## Architecture
 
@@ -112,6 +114,7 @@ flowchart TD
     Content["Plan content (read-only)<br/>roadmap · sessions · routines · food · checklists"] --> Engines
     Store --> Adapter["Storage adapter"]
     Adapter --> IDB[("IndexedDB<br/>on the device")]
+    IDB <-->|"sync when signed in"| Cloud[("Supabase<br/>one row per record, RLS per user")]
     Adapter --> Backup["JSON backup<br/>export / import"]
 ```
 
@@ -180,12 +183,25 @@ Open <http://localhost:5199>. The first screen is onboarding.
 
 ## Data and privacy
 
-- All entries are stored **only on the device**, in the browser's IndexedDB. Nothing is sent to a server.
-- Data does **not sync between devices.** To move to a new phone, export a backup and import it there.
-- **Back up regularly:** *Settings → Export backup* saves a `.json` file; *Settings → Import backup* restores it.
-  The app reminds you once a month.
-- Clearing the browser's site data for the app deletes all entries, so keep a recent backup.
+- **Offline first.** Every change is saved on the device at once (IndexedDB), so the app is fast and works without a connection.
+- **Optional account sync.** Sign in with an emailed code (*Settings → Account*) and changes are copied to your own rows
+  in Supabase whenever you are online. Sign in on another phone and your data comes back.
+- **Separate data per account.** Row Level Security in the database lets each signed-in user read and write only their
+  own records. Signing out removes that user's data from the phone; it stays in the account.
+- **Without an account**, data lives only on the device. Use *Settings → Export backup* and *Import backup* to move it.
 - Progress photos are compressed on the device (about 150 KB each) before they are saved.
+
+### Cloud sync setup (Supabase)
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. **SQL Editor → New query**: paste [`supabase/schema.sql`](supabase/schema.sql) and run it. It creates the `records`
+   table, the newest-wins trigger and the Row Level Security policies.
+3. **Authentication → URL Configuration**: set the Site URL to the deployed address and add it, plus
+   `http://localhost:5199`, to Redirect URLs.
+4. **Authentication → Email Templates**: in *Magic Link* and *Confirm signup*, add `{{ .Token }}` so the email
+   contains the 6-digit code (the link alone opens in the browser, not the installed app).
+5. Put the project URL and publishable key in `.env` as `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+   Both are public by design; never use the secret or `service_role` key in the app.
 
 ## Deployment
 
@@ -244,7 +260,7 @@ npm test
 - Step import from Google Fit and Apple Health
 - Expense import from bank SMS and UPI statements
 - Shareable before-and-after progress card
-- Optional sync across devices
+- Google sign-in as an alternative to the email code
 
 ## Documentation
 
