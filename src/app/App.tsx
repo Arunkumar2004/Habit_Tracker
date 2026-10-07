@@ -1,5 +1,5 @@
 // App shell: boot, theme, onboarding gate, tab routing, bottom nav, (+) quick add, sheet and toast hosts.
-import { Fragment, useEffect, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { useStore, type Tab } from '../store/store';
 import { quickAddItems } from '../store/registry';
 import { Icon } from '../ui/Icon';
@@ -74,6 +74,33 @@ function ToastHost() {
   );
 }
 
+/** Floating (+) above the tab bar. Slides away while scrolling down so it never sits on top of a control. */
+function QuickAddButton() {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > last + 4 && y > 80) setHidden(true);
+      else if (y < last - 4) setHidden(false);
+      last = y;
+      clearTimeout(timer);
+      timer = setTimeout(() => setHidden(false), 900); // back once scrolling stops
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      clearTimeout(timer);
+    };
+  }, []);
+  return (
+    <button className="fab" data-hidden={hidden} type="button" aria-label="Quick add" onClick={openQuickAdd}>
+      <Icon name="plus" />
+    </button>
+  );
+}
+
 function openQuickAdd() {
   const { openSheet, closeSheet } = useStore.getState();
   openSheet('Quick add', () => <QuickAddMenu close={closeSheet} />);
@@ -113,26 +140,18 @@ export function App() {
       <main className="app">
         <Screen params={route.params ?? {}} />
       </main>
+      {!route.screen && <QuickAddButton />}
       <nav className="nav" aria-label="Main">
         <div className="nav-inner">
-          {TABS.map((t, i) => (
-            <Fragment key={t.tab}>
-              {i === 2 && (
-                <div className="nav-fab">
-                  <button className="fab" type="button" aria-label="Quick add" onClick={openQuickAdd}>
-                    <Icon name="plus" />
-                  </button>
-                </div>
-              )}
-              <button
-                type="button" aria-current={route.tab === t.tab && !route.screen ? 'page' : undefined}
-                onClick={() => navigate(t.tab)}
-                style={route.tab === t.tab ? { color: 'var(--accent)' } : undefined}
-              >
-                <Icon name={t.icon} />
-                {t.label}
-              </button>
-            </Fragment>
+          {TABS.map((t) => (
+            <button
+              key={t.tab} type="button" aria-current={route.tab === t.tab && !route.screen ? 'page' : undefined}
+              onClick={() => navigate(t.tab)}
+              style={route.tab === t.tab ? { color: 'var(--accent)' } : undefined}
+            >
+              <Icon name={t.icon} />
+              {t.label}
+            </button>
           ))}
         </div>
       </nav>
