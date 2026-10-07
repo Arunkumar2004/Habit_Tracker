@@ -1,0 +1,45 @@
+/* Design tokens (blueprint 7). Layout: single mobile column, max 480px, 16px gutter, fixed bottom tab bar. */
+:root {
+  --bg: #FAF6F0;
+  --surface: #FFFFFF;
+  --surface-2: #FDE9DA;
+  --ink: #18181B;
+  --muted: #6B6B70;
+  --line: #ECE4DA;
+  --accent: #E8650A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #FCE3D0;
+  --success: #2F7D4F;
+  --success-soft: #DDF1E5;
+  --warn: #B7791F;
+  --danger: #C0392B;
+  --danger-soft: #F8DEDA;
+  --shadow: 0 1px 2px rgba(24, 24, 27, .05), 0 4px 16px rgba(24, 24, 27, .06);
+  /* chart series, all readable on --surface in both themes */
+  --c1: #E8650A; --c2: #2F7D4F; --c3: #3A6EA5; --c4: #9B5DE5; --c5: #C0392B; --c6: #B7791F; --c7: #18807A; --c8: #6B6B70;
+
+  --font: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-display: 32px; --fs-h1: 24px; --fs-h2: 18px; --fs-body: 15px; --fs-small: 13px; --fs-label: 11px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --r-card: 16px; --r-btn: 12px; --r-pill: 999px;
+  --nav-h: 64px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E0E10; --surface: #1A1A1D; --surface-2: #26221F; --ink: #F4F1EC; --muted: #A1A1AA; --line: #2B2A2E;
+    --accent: #FF7A1A; --accent-ink: #1A0D02; --accent-soft: #3A2414;
+    --success: #4CC38A; --success-soft: #16301F; --warn: #E0A84A; --danger: #FF6B5E; --danger-soft: #3A1A17;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --c1: #FF7A1A; --c2: #4CC38A; --c3: #6FA8DC; --c4: #B794F4; --c5: #FF6B5E; --c6: #E0A84A; --c7: #4FD1C5; --c8: #A1A1AA;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E0E10; --surface: #1A1A1D; --surface-2: #26221F; --ink: #F4F1EC; --muted: #A1A1AA; --line: #2B2A2E;
+  --accent: #FF7A1A; --accent-ink: #1A0D02; --accent-soft: #3A2414;
+  --success: #4CC38A; --success-soft: #16301F; --warn: #E0A84A; --danger: #FF6B5E; --danger-soft: #3A1A17;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --c1: #FF7A1A; --c2: #4CC38A; --c3: #6FA8DC; --c4: #B794F4; --c5: #FF6B5E; --c6: #E0A84A; --c7: #4FD1C5; --c8: #A1A1AA;
+  color-scheme: dark;
+}

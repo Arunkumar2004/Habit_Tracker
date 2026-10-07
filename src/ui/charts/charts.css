@@ -1,0 +1,62 @@
+/* Charts (area E). Every class starts with ch-. Colours come from tokens only. */
+.ch-wrap { width: 100%; min-width: 0; }
+.ch-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font); }
+.ch-svg text { font-variant-numeric: tabular-nums; }
+.ch-axis { font-size: var(--fs-label); fill: var(--muted); }
+.ch-grid { stroke: var(--line); stroke-width: 1; shape-rendering: crispEdges; }
+.ch-zero { stroke: var(--muted); stroke-opacity: .5; stroke-width: 1; shape-rendering: crispEdges; }
+.ch-val { font-size: var(--fs-small); font-weight: 600; fill: var(--ink); }
+.ch-val-halo { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+
+.ch-empty {
+  display: grid; place-items: center; text-align: center; padding: var(--s4); border-radius: var(--r-btn);
+  border: 1px dashed var(--line); color: var(--muted); font-size: var(--fs-small);
+}
+
+.ch-legend {
+  list-style: none; margin: var(--s2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4);
+  font-size: var(--fs-small); color: var(--muted);
+}
+.ch-legend li { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ch-legend-val { color: var(--ink); font-weight: 600; }
+.ch-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* Bars */
+.ch-bar { transition: opacity .15s var(--ease); }
+.ch-bars[data-sel] .ch-bar { opacity: .45; }
+.ch-bars[data-sel] .ch-col[data-on] .ch-bar { opacity: 1; }
+.ch-hit { fill: transparent; cursor: pointer; }
+
+/* Donut */
+.ch-donut { display: grid; justify-items: center; gap: var(--s3); }
+.ch-donut-svg { display: block; max-width: 100%; height: auto; }
+.ch-donut-label { font-size: var(--fs-label); fill: var(--muted); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.ch-donut-value { font-size: var(--fs-h2); fill: var(--ink); font-weight: 700; }
+.ch-donut-list { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 2px; }
+.ch-donut-list li {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 3.2em; align-items: center; gap: var(--s2);
+  min-height: 32px; font-size: var(--fs-small);
+}
+.ch-donut-list .ch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-donut-list .ch-share { color: var(--muted); text-align: right; }
+.ch-donut-list .ch-amt { font-weight: 600; text-align: right; }
+
+/* Heatmap */
+.ch-cell-empty { fill: var(--line); }
+.ch-cell-off { fill: none; stroke: var(--line); stroke-dasharray: 2 2; }
+.ch-heat-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s3); margin-top: var(--s2); font-size: var(--fs-label); color: var(--muted); }
+.ch-heat-legend .ch-steps { display: inline-flex; align-items: center; gap: 3px; }
+.ch-heat-legend svg { display: block; }
+
+/* Radar */
+.ch-radar-svg { display: block; width: 100%; height: auto; margin: 0 auto; }
+.ch-ring { fill: none; stroke: var(--line); }
+.ch-spoke { stroke: var(--line); }
+.ch-radar-label { font-size: var(--fs-small); fill: var(--ink); font-weight: 500; }
+.ch-radar-num { font-size: var(--fs-label); fill: var(--muted); }
+
+/* Sparkline */
+.ch-spark { display: inline-block; vertical-align: middle; overflow: visible; }
+
+/* Confetti */
+.ch-confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 80; }
