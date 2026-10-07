@@ -3,3 +3,4 @@ dist/
 dist-artifact/
 .vercel/
 *.log
+src/features/plan/anim/__*
