@@ -1,4 +1,4 @@
-// Cloud sync with Supabase (supabase/schema.sql). Offline first: every change is saved on the phone at once
+// Cloud sync with Supabase (supabase/schema.sql), signed in with email + password. Offline first: every change is saved on the phone at once
 // (IndexedDB) and copied to the user's own rows in Supabase when online. Row Level Security keeps each
 // user's data separate.
 //
@@ -36,9 +36,15 @@ type AnyRec = Base & Record<string, unknown>;
 interface Row { col: string; id: string; rec: AnyRec; updated_at: number; deleted: boolean }
 
 export type CloudStatus = 'off' | 'signed_out' | 'syncing' | 'synced' | 'offline' | 'error';
-export interface CloudState { configured: boolean; status: CloudStatus; email: string | null; lastSyncAt: number | null; error: string | null }
+export interface CloudState {
+  configured: boolean; status: CloudStatus; email: string | null; lastSyncAt: number | null; error: string | null;
+  /** True after opening a password-reset link: the app asks for a new password. */
+  recovery: boolean;
+}
 
-let state: CloudState = { configured: cloudConfigured, status: cloudConfigured ? 'signed_out' : 'off', email: null, lastSyncAt: null, error: null };
+let state: CloudState = {
+  configured: cloudConfigured, status: cloudConfigured ? 'signed_out' : 'off', email: null, lastSyncAt: null, error: null, recovery: false,
+};
 const listeners = new Set<(s: CloudState) => void>();
 function set(patch: Partial<CloudState>) {
   state = { ...state, ...patch };
@@ -204,24 +210,40 @@ function schedulePush() {
   }, 1500);
 }
 
-// ---------- sign in / out ----------
-/** Email a 6-digit code (and a sign-in link) to this address. */
-export async function sendCode(email: string): Promise<void> {
+// ---------- sign in / out (email + password) ----------
+function need(): SupabaseClient {
   const c = client();
   if (!c) throw new Error('Sync is not set up in this version of the app.');
-  const { error } = await c.auth.signInWithOtp({
-    email: email.trim(),
-    options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+  return c;
+}
+
+/** Create an account. Returns 'signed_in', or 'confirm' when Supabase first wants the email confirmed. */
+export async function signUp(email: string, password: string): Promise<'signed_in' | 'confirm'> {
+  const { data, error } = await need().auth.signUp({
+    email: email.trim(), password, options: { emailRedirectTo: window.location.origin },
   });
+  if (error) throw error;
+  // An already-registered email comes back with no identities (Supabase hides whether it exists).
+  if (data.user && data.user.identities?.length === 0) throw new Error('This email already has an account. Sign in instead.');
+  return data.session ? 'signed_in' : 'confirm';
+}
+
+export async function signIn(email: string, password: string): Promise<void> {
+  const { error } = await need().auth.signInWithPassword({ email: email.trim(), password });
   if (error) throw error;
 }
 
-/** Check the 6-digit code from the email. */
-export async function verifyCode(email: string, code: string): Promise<void> {
-  const c = client();
-  if (!c) throw new Error('Sync is not set up in this version of the app.');
-  const { error } = await c.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' });
+/** Email a link that opens the app to set a new password. */
+export async function resetPassword(email: string): Promise<void> {
+  const { error } = await need().auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
   if (error) throw error;
+}
+
+/** Set a new password (after opening the reset link). */
+export async function updatePassword(password: string): Promise<void> {
+  const { error } = await need().auth.updateUser({ password });
+  if (error) throw error;
+  set({ recovery: false });
 }
 
 /** Push anything left, sign out, and clear this user's data from the phone. */
@@ -253,7 +275,8 @@ if (cloudConfigured) {
         session = s;
         if (!s) set({ email: null, status: 'signed_out' });
         else set({ email: s.user.email ?? null, status: state.status === 'signed_out' ? 'syncing' : state.status });
-        if (s && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) void syncNow();
+        if (event === 'PASSWORD_RECOVERY') set({ recovery: true });
+        if (s && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY')) void syncNow();
       });
       const kick = () => {
         if (document.visibilityState === 'visible' && session) void syncNow();

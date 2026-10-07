@@ -96,7 +96,7 @@ account so it survives a lost phone.
 | Styling | Plain CSS with design tokens for light and dark themes, Poppins |
 | Charts | Hand-written SVG: donut, bars, line, radar, heatmap, sparkline |
 | Storage | IndexedDB behind a single storage adapter, synced to Supabase (Postgres, Row Level Security) when signed in |
-| Auth | Supabase email one-time code |
+| Auth | Supabase email + password |
 | Offline | Web app manifest and a service worker |
 | Tests | Vitest |
 | Hosting | Vercel (static) |
@@ -184,7 +184,7 @@ Open <http://localhost:5199>. The first screen is onboarding.
 ## Data and privacy
 
 - **Offline first.** Every change is saved on the device at once (IndexedDB), so the app is fast and works without a connection.
-- **Optional account sync.** Sign in with an emailed code (*Settings → Account*) and changes are copied to your own rows
+- **Optional account sync.** Sign in with email and password (*Settings → Account*) and changes are copied to your own rows
   in Supabase whenever you are online. Sign in on another phone and your data comes back.
 - **Separate data per account.** Row Level Security in the database lets each signed-in user read and write only their
   own records. Signing out removes that user's data from the phone; it stays in the account.
@@ -198,8 +198,8 @@ Open <http://localhost:5199>. The first screen is onboarding.
    table, the newest-wins trigger and the Row Level Security policies.
 3. **Authentication → URL Configuration**: set the Site URL to the deployed address and add it, plus
    `http://localhost:5199`, to Redirect URLs.
-4. **Authentication → Email Templates**: in *Magic Link* and *Confirm signup*, add `{{ .Token }}` so the email
-   contains the 6-digit code (the link alone opens in the browser, not the installed app).
+4. Sign-in uses **email + password** (Supabase's default Email provider, nothing to change). New accounts confirm
+   their email once through the link Supabase sends; after that, sign-in happens inside the app.
 5. Put the project URL and publishable key in `.env` as `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
    Both are public by design; never use the secret or `service_role` key in the app.
 
